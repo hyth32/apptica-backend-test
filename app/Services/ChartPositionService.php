@@ -4,19 +4,38 @@ namespace App\Services;
 
 use Exception;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\URL;
 
 class ChartPositionService
 {
-    private string $apiUrl;
+    private string $baseUrl;
+    private int $applicationId;
+    private int $countryId;
 
     public function __construct() {
-        $this->apiUrl = config('services.chart.api_url');
+        $this->baseUrl = config('services.chart.base_url');
+        $this->applicationId = config('services.chart.application_id');
+        $this->countryId = config('services.chart.country_id');
     }
 
-    public function getPositions(array $params = [])
+    public function buildUrl(string $date): string
+    {
+        $params = [
+            'date_from' => $date,
+            'date_to' => $date,
+            'B4NKGg' => 'fVN5Q9KVOlOHDx9mOsKPAQsFBlEhBOwguLkNEDTZvKzJzT3l',
+        ];
+
+        $apiUrl = "$this->baseUrl/$this->applicationId/$this->countryId";
+
+        return URL::query($apiUrl, $params);
+    }
+
+    public function getPositions(string $date)
     {
         try {
-            $response = Http::retry(3, 100)->get($this->apiUrl, $params);
+            $apiUrl = $this->buildUrl($date);
+            $response = Http::retry(3, 100)->get($apiUrl);
             if (!$response->successful()) {
                 throw new Exception('API request failed');
             }

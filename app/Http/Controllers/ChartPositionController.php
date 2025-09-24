@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\ChartPositionRequest;
 use App\Services\ChartPositionService;
 
 class ChartPositionController extends Controller
@@ -10,9 +11,11 @@ class ChartPositionController extends Controller
         private ChartPositionService $service,
     ) {}
 
-    public function index()
+    public function index(ChartPositionRequest $request)
     {
-        $response = $this->service->getPositions();
+        $date = $request->validated('date');
+        $response = $this->service->getPositions($date);
+
         return response()->json([
             'chart_positions' => $response->body(),
         ]);

@@ -35,4 +35,9 @@ return [
         ],
     ],
 
+    'chart' => [
+        'base_url' => env('BASE_API_URL'),
+        'application_id' => 1421444,
+        'country_id' => 1,
+    ],
 ];
