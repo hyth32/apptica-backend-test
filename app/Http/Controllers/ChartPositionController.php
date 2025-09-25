@@ -61,6 +61,21 @@ class ChartPositionController extends Controller
      *             )
      *         )
      *     ),
+     *     @OA\Response(
+     *         response=429,
+     *         description="Слишком много запросов",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=false),
+     *             @OA\Property(property="error", type="string", example="Too Many Requests"),
+     *             @OA\Property(
+     *                 property="data",
+     *                 type="array",
+     *                 example="[]",
+     *                 @OA\Items(type="string"),
+     *                 description="Пустой массив при ошибке"
+     *             )
+     *         )
+     *     )
      * )
      */
     public function index(ChartPositionRequest $request)
