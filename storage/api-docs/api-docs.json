@@ -1,0 +1,99 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "API Documentation",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "/api/v1": {},
+        "/api/v1/chart-positions": {
+            "get": {
+                "summary": "Получение информации позиции приложения в топе по конкретной дате",
+                "operationId": "7056266c641635154f31dd8a81e0c9e7",
+                "parameters": [
+                    {
+                        "name": "date",
+                        "in": "query",
+                        "description": "Дата в формате Y-m-d",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Успешный ответ",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "chart_positions": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "properties": {
+                                                            "category_id": {
+                                                                "description": "ID категории",
+                                                                "type": "string"
+                                                            },
+                                                            "date": {
+                                                                "description": "Дата",
+                                                                "type": "string"
+                                                            },
+                                                            "value": {
+                                                                "description": "Значение",
+                                                                "type": "integer"
+                                                            }
+                                                        },
+                                                        "type": "object"
+                                                    }
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "402": {
+                        "description": "Ошибка при получении данных",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "error": {
+                                            "description": "Сообщение об ошибке",
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "description": "Пустой массив при ошибке",
+                                            "type": "array",
+                                            "items": {
+                                                "type": "string"
+                                            },
+                                            "example": "[]"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

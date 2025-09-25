@@ -8,7 +8,9 @@ Route::get('/', function () {
 });
 
 Route::prefix('/api')->group(function () {
-    Route::controller(ChartPositionController::class)->group(function () {
-        Route::get('chart-positions', 'index');
+    Route::prefix('/v1')->group(function () {
+        Route::controller(ChartPositionController::class)->group(function () {
+            Route::get('chart-positions', 'index');
+        });
     });
 });
