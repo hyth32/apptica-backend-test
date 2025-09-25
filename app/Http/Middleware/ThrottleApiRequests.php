@@ -9,13 +9,15 @@ use Symfony\Component\HttpFoundation\Response;
 
 class ThrottleApiRequests
 {
+    private int $maxAttempts = 5;
+
     public function handle(Request $request, Closure $next): Response
     {
         if ($request->is('api/*')) {
             $ip = $request->ip();
             $key = "api:{$ip}";
 
-            if (RateLimiter::tooManyAttempts($key, 5)) {
+            if (RateLimiter::tooManyAttempts($key, $this->maxAttempts)) {
                 return response()->json([
                     'success' => false,
                     'error' => 'Too Many Requests',
