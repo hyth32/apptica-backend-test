@@ -16,8 +16,18 @@ class ChartPositionController extends Controller
         $date = $request->validated('date');
         $response = $this->service->getPositions($date);
 
+        if (!$response->isSuccessful()) {
+            return response()->json([
+                'success' => false,
+                'error' => $response->message,
+            ], $response->statusCode);
+        }
+
         return response()->json([
-            'chart_positions' => $response->body(),
+            'success' => true,
+            'data' => [
+                'chart_positions' => $response->data,
+            ],
         ]);
     }
 }

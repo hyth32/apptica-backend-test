@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use Exception;
+use App\Services\Api\ChartPositionResponse;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\URL;
 
@@ -31,7 +32,7 @@ class ChartPositionService
         return URL::query($apiUrl, $params);
     }
 
-    public function getPositions(string $date)
+    public function getPositions(string $date): ChartPositionResponse
     {
         try {
             $apiUrl = $this->buildUrl($date);
@@ -40,9 +41,13 @@ class ChartPositionService
                 throw new Exception('API request failed');
             }
 
-            return $response;
+            return ChartPositionResponse::fromArray($response->json());
         } catch (Exception $e) {
-            return $e->getMessage();
+            return ChartPositionResponse::fromArray([
+                'status_code' => $e->getCode(),
+                'message' => $e->getMessage(),
+                'data' => [],
+            ]);
         }
     }
 }
