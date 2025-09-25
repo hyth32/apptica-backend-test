@@ -8,16 +8,21 @@ class ChartPositionResponse extends ApiResponse
 {
     protected static function parseData(array $data): Collection
     {
-        return collect($data)->map(function ($categories, $categoryId) {
-            return collect($categories)->map(function ($subcategories) use ($categoryId) {
-                return collect($subcategories)->map(function ($value, $date) use ($categoryId) {
+        return collect($data)->map(function ($categories) {
+            $categoriesData = collect($categories)->map(function ($subcategories) {
+                return collect($subcategories)->flatMap(function ($value, $date) {
                     return [
-                        'category_id' => $categoryId,
                         'date' => $date,
                         'value' => $value,
                     ];
                 });
             });
+
+            $minValue = $categoriesData->min('value');
+            return [
+                'date' => $categoriesData->pluck('date')->first(),
+                'value' => $minValue,
+            ];
         });
     }
 }
