@@ -3,16 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ChartPositionRequest;
-use App\Models\ChartPosition;
+use App\Http\Resources\ChartPositionResource;
 use App\Services\ChartPositionService;
 use Illuminate\Http\JsonResponse;
 
 class ChartPositionController extends Controller
 {
-    private const HTTP_OK = 200;
-    private const HTTP_PAYMENT_REQUIRED = 402;
-    private const HTTP_TOO_MANY_REQUESTS = 429;
-
     public function __construct(
         private ChartPositionService $service,
     ) {}
@@ -36,15 +32,12 @@ class ChartPositionController extends Controller
      *             @OA\Property(
      *                 property="data",
      *                 type="object",
-     *                 @OA\Property(
-     *                     property="chart_positions",
-     *                     type="array",
-     *                     @OA\Items(
-     *                         @OA\Property(property="category_id", type="string", description="ID категории"),
-     *                         @OA\Property(property="date", type="string", description="Дата"),
-     *                         @OA\Property(property="value", type="integer", description="Значение")
-     *                     )
-     *                 )
+     *                 description="ID категории => позиция в топе",
+     *                 example={
+     *                     "1": 5,
+     *                     "2": 12,
+     *                     "3": 8
+     *                 }
      *             )
      *         )
      *     ),
@@ -88,60 +81,12 @@ class ChartPositionController extends Controller
     {
         $date = $request->validated('date');
         
-        $chartPositions = $this->getChartPositions($date);
+        $chartPositions = $this->service->getChartPositionsForDate($date);
         
         if ($chartPositions === null) {
-            return $this->errorResponse('Ошибка при получении данных', self::HTTP_PAYMENT_REQUIRED);
+            return ChartPositionResource::error('Ошибка при получении данных', 402);
         }
 
-        return $this->successResponse($chartPositions);
-    }
-
-    private function getChartPositions(string $date): ?array
-    {
-        $existingPositions = $this->getExistingPositions($date);
-        
-        if ($existingPositions !== null) {
-            return $existingPositions;
-        }
-
-        return $this->fetchAndStorePositions($date);
-    }
-
-    private function getExistingPositions(string $date): ?array
-    {
-        $positions = ChartPosition::where('date', $date)->get();
-        
-        return $positions->isNotEmpty() ? $positions->toArray() : null;
-    }
-
-    private function fetchAndStorePositions(string $date): ?array
-    {
-        $response = $this->service->getPositions($date);
-
-        if (!$response->isSuccessful()) {
-            return null;
-        }
-
-        return $response->data?->toArray() ?? [];
-    }
-
-    private function successResponse(array $data): JsonResponse
-    {
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'chart_positions' => $data,
-            ],
-        ], self::HTTP_OK);
-    }
-
-    private function errorResponse(string $message, int $statusCode): JsonResponse
-    {
-        return response()->json([
-            'success' => false,
-            'error' => $message,
-            'data' => [],
-        ], $statusCode);
+        return ChartPositionResource::success($chartPositions);
     }
 }

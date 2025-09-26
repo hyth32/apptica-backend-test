@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use Exception;
+use App\Models\ChartPosition;
 use App\Services\Api\ChartPositionResponse;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\URL;
@@ -59,6 +60,45 @@ class ChartPositionService
             
             return $this->createErrorResponse($e);
         }
+    }
+
+    public function getChartPositionsForDate(string $date): ?array
+    {
+        $existingPositions = $this->getExistingPositions($date);
+        
+        if ($existingPositions !== null) {
+            return $existingPositions;
+        }
+
+        return $this->fetchAndStorePositions($date);
+    }
+
+    private function getExistingPositions(string $date): ?array
+    {
+        $positions = ChartPosition::where('date', $date)->get();
+        
+        if ($positions->isEmpty()) {
+            return null;
+        }
+
+        return $positions->pluck('value', 'category_id')->toArray();
+    }
+
+    private function fetchAndStorePositions(string $date): ?array
+    {
+        $response = $this->getPositions($date);
+
+        if (!$response->isSuccessful()) {
+            return null;
+        }
+
+        $data = $response->data?->toArray() ?? [];
+        
+        if (empty($data)) {
+            return [];
+        }
+
+        return collect($data)->pluck('value', 'category_id')->toArray();
     }
 
     private function makeHttpRequest(string $url)
