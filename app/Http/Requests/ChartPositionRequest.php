@@ -13,7 +13,7 @@ class ChartPositionRequest extends FormRequest
         ];
     }
 
-    public function attributes()
+    public function attributes(): array
     {
         return [
             'date' => 'Дата выборки',

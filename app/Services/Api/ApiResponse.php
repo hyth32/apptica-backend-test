@@ -6,18 +6,23 @@ use Illuminate\Support\Collection;
 
 abstract class ApiResponse
 {
+    private const SUCCESS_STATUS_MIN = 200;
+    private const SUCCESS_STATUS_MAX = 299;
+
     public function __construct(
-        public int $statusCode,
-        public string $message,
-        public ?Collection $data = null,
+        public readonly int $statusCode,
+        public readonly string $message,
+        public readonly ?Collection $data = null,
     ) {}
 
     public static function fromArray(array $data): static
     {
         return new static(
-            statusCode: $data['status_code'],
-            message: $data['message'],
-            data: isset($data['data']) ? static::parseData($data['data']) : null,
+            statusCode: $data['status_code'] ?? 500,
+            message: $data['message'] ?? 'Unknown error',
+            data: isset($data['data']) && is_array($data['data']) 
+                ? static::parseData($data['data']) 
+                : null,
         );
     }
 
@@ -25,6 +30,12 @@ abstract class ApiResponse
 
     public function isSuccessful(): bool
     {
-        return $this->statusCode >= 200 && $this->statusCode < 300;
+        return $this->statusCode >= self::SUCCESS_STATUS_MIN 
+            && $this->statusCode <= self::SUCCESS_STATUS_MAX;
+    }
+
+    public function hasData(): bool
+    {
+        return $this->data !== null && $this->data->isNotEmpty();
     }
 }

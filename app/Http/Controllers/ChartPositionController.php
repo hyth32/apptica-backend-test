@@ -3,10 +3,16 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ChartPositionRequest;
+use App\Models\ChartPosition;
 use App\Services\ChartPositionService;
+use Illuminate\Http\JsonResponse;
 
 class ChartPositionController extends Controller
 {
+    private const HTTP_OK = 200;
+    private const HTTP_PAYMENT_REQUIRED = 402;
+    private const HTTP_TOO_MANY_REQUESTS = 429;
+
     public function __construct(
         private ChartPositionService $service,
     ) {}
@@ -78,24 +84,64 @@ class ChartPositionController extends Controller
      *     )
      * )
      */
-    public function index(ChartPositionRequest $request)
+    public function index(ChartPositionRequest $request): JsonResponse
     {
         $date = $request->validated('date');
+        
+        $chartPositions = $this->getChartPositions($date);
+        
+        if ($chartPositions === null) {
+            return $this->errorResponse('Ошибка при получении данных', self::HTTP_PAYMENT_REQUIRED);
+        }
+
+        return $this->successResponse($chartPositions);
+    }
+
+    private function getChartPositions(string $date): ?array
+    {
+        $existingPositions = $this->getExistingPositions($date);
+        
+        if ($existingPositions !== null) {
+            return $existingPositions;
+        }
+
+        return $this->fetchAndStorePositions($date);
+    }
+
+    private function getExistingPositions(string $date): ?array
+    {
+        $positions = ChartPosition::where('date', $date)->get();
+        
+        return $positions->isNotEmpty() ? $positions->toArray() : null;
+    }
+
+    private function fetchAndStorePositions(string $date): ?array
+    {
         $response = $this->service->getPositions($date);
 
         if (!$response->isSuccessful()) {
-            return response()->json([
-                'success' => false,
-                'error' => $response->message,
-                'data' => [],
-            ], $response->statusCode);
+            return null;
         }
 
+        return $response->data?->toArray() ?? [];
+    }
+
+    private function successResponse(array $data): JsonResponse
+    {
         return response()->json([
             'success' => true,
             'data' => [
-                'chart_positions' => $response->data,
+                'chart_positions' => $data,
             ],
-        ]);
+        ], self::HTTP_OK);
+    }
+
+    private function errorResponse(string $message, int $statusCode): JsonResponse
+    {
+        return response()->json([
+            'success' => false,
+            'error' => $message,
+            'data' => [],
+        ], $statusCode);
     }
 }

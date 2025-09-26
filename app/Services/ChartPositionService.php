@@ -6,14 +6,20 @@ use Exception;
 use App\Services\Api\ChartPositionResponse;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Facades\Log;
 
 class ChartPositionService
 {
+    private const MAX_RETRIES = 3;
+    private const RETRY_DELAY = 100;
+
+    private string $apiToken;
     private string $baseUrl;
     private int $applicationId;
     private int $countryId;
 
     public function __construct() {
+        $this->apiToken = config('services.chart.api_token');
         $this->baseUrl = config('services.chart.base_url');
         $this->applicationId = config('services.chart.application_id');
         $this->countryId = config('services.chart.country_id');
@@ -24,10 +30,10 @@ class ChartPositionService
         $params = [
             'date_from' => $date,
             'date_to' => $date,
-            'B4NKGg' => 'fVN5Q9KVOlOHDx9mOsKPAQsFBlEhBOwguLkNEDTZvKzJzT3l',
+            'B4NKGg' => $this->apiToken,
         ];
 
-        $apiUrl = "$this->baseUrl/$this->applicationId/$this->countryId";
+        $apiUrl = "{$this->baseUrl}/{$this->applicationId}/{$this->countryId}";
 
         return URL::query($apiUrl, $params);
     }
@@ -36,18 +42,47 @@ class ChartPositionService
     {
         try {
             $apiUrl = $this->buildUrl($date);
-            $response = Http::retry(3, 100)->get($apiUrl);
+            $response = $this->makeHttpRequest($apiUrl);
+            
             if (!$response->successful()) {
-                throw new Exception('API request failed');
+                $this->logApiError($response, $date);
+                throw new Exception('API request failed with status: ' . $response->status());
             }
 
             return ChartPositionResponse::fromArray($response->json());
         } catch (Exception $e) {
-            return ChartPositionResponse::fromArray([
-                'status_code' => $e->getCode(),
-                'message' => $e->getMessage(),
-                'data' => [],
+            Log::error('ChartPositionService error', [
+                'date' => $date,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
             ]);
+            
+            return $this->createErrorResponse($e);
         }
+    }
+
+    private function makeHttpRequest(string $url)
+    {
+        return Http::retry(self::MAX_RETRIES, self::RETRY_DELAY)
+            ->timeout(30)
+            ->get($url);
+    }
+
+    private function logApiError($response, string $date): void
+    {
+        Log::error('Chart API request failed', [
+            'date' => $date,
+            'status' => $response->status(),
+            'body' => $response->body(),
+        ]);
+    }
+
+    private function createErrorResponse(Exception $e): ChartPositionResponse
+    {
+        return ChartPositionResponse::fromArray([
+            'status_code' => $e->getCode() ?: 500,
+            'message' => $e->getMessage(),
+            'data' => [],
+        ]);
     }
 }
